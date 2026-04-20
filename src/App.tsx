@@ -159,7 +159,7 @@ export default function App() {
       if (currentWordIndex + 1 >= shuffledWords.length) {
         setGameState('RESULT');
       }
-    }, 600); // Slightly faster feedback
+    }, 250); // Faster feedback transition
   };
 
   const resetGame = () => {
@@ -232,15 +232,12 @@ export default function App() {
                 <h1 className="text-3xl font-serif italic font-extrabold tracking-tight mb-2 text-morandi-text">
                   Heads Up!
                 </h1>
-                <p className="text-[14px] uppercase tracking-[4px] text-morandi-clay font-bold opacity-80">
-                  Morandi Edition
-                </p>
               </motion.div>
               
               {isLandscape && (
                 <div className="mt-12 space-y-4">
-                  <div className="text-[11px] uppercase tracking-[2px] font-bold opacity-40">遊戲指南</div>
-                  <p className="text-sm leading-relaxed opacity-60">
+                  <div className="text-[11px] uppercase tracking-[2px] font-bold opacity-70">遊戲指南</div>
+                  <p className="text-sm leading-relaxed opacity-80">
                     選一個你感興趣的類別，將電話貼緊額頭，讓朋友用演技帶領你通關。
                   </p>
                 </div>
@@ -249,7 +246,7 @@ export default function App() {
 
             <div className="flex-1 flex flex-col min-h-0">
               <div className="flex justify-between items-end mb-6">
-                <div className="text-[12px] uppercase tracking-[3px] opacity-40 font-bold">
+                <div className="text-[12px] uppercase tracking-[3px] opacity-70 font-bold">
                   題庫類別庫
                 </div>
               </div>
@@ -272,7 +269,7 @@ export default function App() {
                       </div>
                     )}
                     <h3 className="font-serif italic text-2xl font-black relative z-10 text-morandi-text">{cat.name}</h3>
-                    <div className="text-[10px] uppercase tracking-[2px] font-bold mt-2 opacity-50 relative z-10">
+                    <div className="text-[10px] uppercase tracking-[2px] font-bold mt-2 opacity-70 relative z-10">
                       {cat.words.length} 題
                     </div>
                   </motion.button>
@@ -308,9 +305,6 @@ export default function App() {
                   
                   <div className="space-y-8">
                     <div>
-                      <div className="text-[12px] uppercase tracking-[3px] opacity-40 font-bold mb-4">
-                        遊戲时长配置
-                      </div>
                       <div className="grid grid-cols-2 gap-3">
                         {[60, 90, 120, 180].map((t) => (
                           <button
@@ -327,57 +321,33 @@ export default function App() {
                         ))}
                       </div>
                     </div>
-
-                    <div>
-                      <div className="text-[12px] uppercase tracking-[3px] opacity-40 font-bold mb-4">
-                        搭配音樂
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        {MUSIC_PRESETS.map((p) => (
-                          <button
-                            key={p.name}
-                            onClick={() => selectMusicPreset(selectedCategory.id, p.url)}
-                            className={`py-3 px-2 rounded-xl border text-[11px] font-bold transition-all truncate ${
-                              selectedCategory.musicUrl === p.url
-                                ? 'bg-morandi-clay/40 border-morandi-clay text-white'
-                                : 'glass-button border-white/10'
-                            }`}
-                          >
-                            {p.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
                   </div>
                </div>
 
                <div className="flex-1 flex flex-col pt-8">
-                  <div className="text-[12px] uppercase tracking-[3px] opacity-40 font-bold mb-6">
-                    玩家指南
-                  </div>
                   <div className="glass-card p-10 rounded-[40px] space-y-8 mb-10">
                      <div className="flex gap-6 items-start">
-                        <div className="w-10 h-10 rounded-full bg-morandi-misty-blue/20 flex items-center justify-center shrink-0 text-morandi-misty-blue">1</div>
+                        <div className="w-10 h-10 rounded-full bg-morandi-clay flex items-center justify-center shrink-0 text-white font-bold shadow-sm">1</div>
                         <div>
                            <h4 className="font-bold text-lg mb-1">貼緊額頭</h4>
-                           <p className="text-sm opacity-60">將手機屏幕朝外貼在額頭上，讓你的隊友看到文字。</p>
+                           <p className="text-sm opacity-80">將手機屏幕朝外貼在額頭上，讓你的隊友看到文字。</p>
                         </div>
                      </div>
                      <div className="flex gap-6 items-start">
-                        <div className="w-10 h-10 rounded-full bg-morandi-sage-green/20 flex items-center justify-center shrink-0 text-morandi-sage-green">2</div>
+                        <div className="w-10 h-10 rounded-full bg-morandi-clay flex items-center justify-center shrink-0 text-white font-bold shadow-sm">2</div>
                         <div>
                            <h4 className="font-bold text-lg mb-1">正確判定</h4>
-                           <p className="text-sm opacity-60">
+                           <p className="text-sm opacity-80">
                              橫向：點擊螢幕 <span className="text-morandi-sage-green font-bold text-base">右側</span><br/>
                              直向：點擊螢幕 <span className="text-morandi-sage-green font-bold text-base">上方</span>
                            </p>
                         </div>
                      </div>
                      <div className="flex gap-6 items-start">
-                        <div className="w-10 h-10 rounded-full bg-morandi-dusty-rose/20 flex items-center justify-center shrink-0 text-morandi-dusty-rose">3</div>
+                        <div className="w-10 h-10 rounded-full bg-morandi-clay flex items-center justify-center shrink-0 text-white font-bold shadow-sm">3</div>
                         <div>
                            <h4 className="font-bold text-lg mb-1">跳過/不確定</h4>
-                           <p className="text-sm opacity-60">
+                           <p className="text-sm opacity-80">
                              橫向：點擊螢幕 <span className="text-morandi-dusty-rose font-bold text-base">左側</span><br/>
                              直向：點擊螢幕 <span className="text-morandi-dusty-rose font-bold text-base">下方</span>
                            </p>
@@ -412,7 +382,7 @@ export default function App() {
             >
               {countdownValue}
             </motion.div>
-            <div className="text-xs uppercase tracking-[15px] font-bold opacity-30 mt-12">
+            <div className="text-xs uppercase tracking-[15px] font-bold opacity-60 mt-12">
               Focus & Ready
             </div>
           </motion.div>
@@ -492,15 +462,15 @@ export default function App() {
               </div>
             </div>
 
-            <div className="text-center px-12 relative z-0 pointer-events-none">
+            <div className="text-center px-6 relative z-0 pointer-events-none w-full">
               <AnimatePresence mode="wait">
                 <motion.h1
                   key={currentWordIndex}
-                  initial={{ y: 40, opacity: 0, filter: 'blur(10px)' }}
-                  animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
-                  exit={{ y: -40, opacity: 0, filter: 'blur(10px)' }}
-                  transition={{ type: 'spring', stiffness: 120, damping: 15 }}
-                  className={`font-serif font-extrabold italic tracking-tight text-morandi-text leading-none break-all ${getDynamicFontSize(shuffledWords[currentWordIndex] || '')}`}
+                  initial={{ y: 40, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: -40, opacity: 0 }}
+                  transition={{ type: 'spring', stiffness: 120, damping: 20 }}
+                  className={`font-serif font-extrabold italic text-morandi-text leading-none break-words px-8 text-center w-full ${getDynamicFontSize(shuffledWords[currentWordIndex] || '')}`}
                 >
                   {shuffledWords[currentWordIndex] || '...'}
                 </motion.h1>
@@ -509,19 +479,16 @@ export default function App() {
 
             {feedback && (
               <motion.div 
-                initial={{ opacity: 0, backgroundColor: 'rgba(255,255,255,0)' }}
+                initial={{ opacity: 0 }}
                 animate={{ opacity: 1, backgroundColor: feedback === 'CORRECT' ? 'rgba(164, 180, 148, 0.4)' : 'rgba(201, 159, 161, 0.4)' }}
                 exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
                 className="absolute inset-0 flex items-center justify-center pointer-events-none z-20 backdrop-blur-sm"
-              >
-                <div className={`px-12 py-6 rounded-full font-serif italic font-black text-5xl text-white shadow-2xl`}>
-                  {feedback === 'CORRECT' ? 'Correct' : 'Skip'}
-                </div>
-              </motion.div>
+              />
             )}
 
-            {/* Visual labels for the split areas (subtle) */}
-            <div className={`absolute inset-0 flex justify-between px-12 text-[11px] font-bold tracking-[5px] uppercase opacity-20 z-10 pointer-events-none ${isLandscape ? 'items-end pb-8' : 'flex-col items-center py-24'}`}>
+            {/* Visual labels for the split areas - Hidden as requested */}
+            <div className={`absolute inset-0 flex justify-between px-12 text-[11px] font-bold tracking-[5px] uppercase opacity-20 z-10 pointer-events-none ${isLandscape ? 'items-end pb-8 hidden' : 'flex-col items-center py-24 hidden'}`}>
               {isLandscape ? (
                 <>
                   <span>⬅️ Skip</span>
@@ -555,7 +522,7 @@ export default function App() {
                   </motion.div>
                   <div className="text-center">
                     <h2 className="text-4xl font-serif italic font-extrabold mb-2 tracking-tight text-morandi-text">Magnificent!</h2>
-                    <div className="text-[12px] uppercase tracking-[4px] opacity-40 font-bold mb-10">
+                    <div className="text-[12px] uppercase tracking-[4px] opacity-70 font-bold mb-10">
                       Game Statistics
                     </div>
                   </div>
@@ -577,7 +544,7 @@ export default function App() {
                </div>
 
                <div className="flex-1 flex flex-col overflow-hidden min-h-0 pt-8">
-                  <div className="text-[12px] uppercase tracking-[3px] opacity-40 font-bold mb-6">
+                  <div className="text-[12px] uppercase tracking-[3px] opacity-70 font-bold mb-6">
                     答題詳情
                   </div>
                   <div className="flex-1 overflow-y-auto mb-10 pr-4 custom-scrollbar">
