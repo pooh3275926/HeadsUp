@@ -68,7 +68,7 @@ export const WORD_BANK: Category[] = [
     name: '美食饗宴',
     bgImage: 'https://supertaste.tvbs.com.tw/_next/image?url=https%3A%2F%2Fcc.tvbs.com.tw%2Fimg%2Fprogram%2Fupload%2F2024%2F04%2F30%2F20240430184650-c091c8f9.jpg&w=768&q=75',
     bgOpacity: 0.3,
-    musicUrl: 'https://pooh3275926.github.io/HeadsUp/public/Praise%20Elevation%20Worship.mp3',
+    musicUrl: 'https://pooh3275926.github.io/HeadsUp/public/Chuuka%20Ichiban.mp3',
     words: [
       '牛肉麵', '珍珠奶茶', '小籠包', '鹹酥雞', '蚵仔煎', '滷肉飯', '鳳梨酥', '臭豆腐', '豬血糕', '肉圓',
       '義大利麵', '漢堡', '披薩', '拉麵', '壽司', '天婦羅', '石鍋拌飯', '炸雞', '咖哩', '牛排',
@@ -107,9 +107,9 @@ export const WORD_BANK: Category[] = [
   {
     id: 'idiom',
     name: '成語大師',
-    bgImage: 'https://picsum.photos/seed/idiom/1920/1080?blur=4',
+    bgImage: 'https://buzzorange.com/citiorange/wp-content/uploads/2014/08/book-shelf-349934_1920-1024x683.jpg',
     bgOpacity: 0.3,
-    musicUrl: 'https://pooh3275926.github.io/HeadsUp/public/Praise%20Elevation%20Worship.mp3',
+    musicUrl: 'https://pooh3275926.github.io/HeadsUp/public/Chinese.mp3',
     words: [
       '一見鍾情', '一心一意', '一舉兩得', '一鳴驚人', '一日千里', '一目了然', '九牛一毛', '十拿九穩', '名落孫山', '守株待兔',
       '亡羊補牢', '畫蛇添足', '掩耳盜鈴', '刻舟求劍', '拔苗助長', '對牛彈琴', '井底之蛙', '狐假虎威', '坐井觀天', '投鼠忌器',
