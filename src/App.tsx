@@ -14,7 +14,8 @@ import {
   Upload,
   Image as ImageIcon,
   Palette,
-  Music2
+  Music2,
+  Home as HomeIcon
 } from 'lucide-react';
 import { WORD_BANK, Category } from './constants/wordBank';
 
@@ -337,7 +338,7 @@ export default function App() {
                   <input 
                     type="file" 
                     className="hidden" 
-                    accept="audio/*" 
+                    accept=".mp3,audio/mpeg,audio/wav,audio/x-m4a,audio/*" 
                     onChange={(e) => handleMusicUpload(e, selectedCategory.id)} 
                   />
                 </label>
@@ -531,15 +532,28 @@ export default function App() {
                 )}
             </div>
 
-            <div className="absolute top-8 left-0 right-0 flex justify-between px-12 items-center z-40 pointer-events-none">
-              <div className="flex items-center gap-3 glass-card px-6 py-3 rounded-2xl border-morandi-clay/20">
-                <Clock size={18} className="text-morandi-clay" />
-                <span className="font-bold text-2xl text-morandi-text">{timeLeft}</span>
+            <div className="absolute top-8 left-0 right-0 flex justify-between px-6 sm:px-12 items-center z-40">
+              <div className="flex items-center gap-4">
+                <button
+                  onPointerDown={(e) => {
+                    e.stopPropagation();
+                    resetGame();
+                  }}
+                  className="w-12 h-12 glass-button rounded-full flex items-center justify-center active:scale-95 transition-transform pointer-events-auto"
+                >
+                  <HomeIcon size={20} />
+                </button>
+                <div className="flex items-center gap-3 glass-card px-6 py-3 rounded-2xl border-morandi-clay/20 pointer-events-none">
+                  <Clock size={18} className="text-morandi-clay" />
+                  <span className="font-bold text-2xl text-morandi-text">{timeLeft}</span>
+                </div>
               </div>
-              <div className="text-morandi-clay/40 font-serif italic text-xl">
+              
+              <div className="hidden md:block text-morandi-clay/40 font-serif italic text-xl pointer-events-none">
                 {selectedCategory?.name}
               </div>
-              <div className="flex items-center gap-3 glass-card px-6 py-3 rounded-2xl border-morandi-clay/20">
+              
+              <div className="flex items-center gap-3 glass-card px-6 py-3 rounded-2xl border-morandi-clay/20 pointer-events-none">
                 <CheckCircle2 size={18} className="text-morandi-sage-green" />
                 <span className="font-bold text-2xl text-morandi-text">{results.filter(r => r.isCorrect).length}</span>
               </div>
