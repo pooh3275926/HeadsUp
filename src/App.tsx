@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, ChangeEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Play, 
@@ -9,8 +9,12 @@ import {
   Clock, 
   CheckCircle2, 
   XCircle,
-  AlertTriangle,
-  ScreenShare
+  Volume2,
+  VolumeX,
+  Upload,
+  Image as ImageIcon,
+  Palette,
+  Music2
 } from 'lucide-react';
 import { WORD_BANK, Category } from './constants/wordBank';
 
@@ -30,11 +34,23 @@ export default function App() {
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [shuffledWords, setShuffledWords] = useState<string[]>([]);
   const [isLandscape, setIsLandscape] = useState(false);
-  const [permissionGranted, setPermissionGranted] = useState(false);
   const [feedback, setFeedback] = useState<'CORRECT' | 'PASS' | null>(null);
   const [countdownValue, setCountdownValue] = useState(3);
   
-  const lastTiltRef = useRef<'NONE' | 'DOWN' | 'UP'>('NONE');
+  // Customization State
+  const [userCategories, setUserCategories] = useState<Category[]>(WORD_BANK);
+  const [isMuted, setIsMuted] = useState(false);
+  
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const musicInputRef = useRef<HTMLInputElement | null>(null);
+
+  const MUSIC_PRESETS = [
+    { name: '歡樂冒險', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' },
+    { name: '緊張刺激', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3' },
+    { name: '輕快節奏', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3' },
+    { name: '動感旋律', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3' },
+  ];
 
   // Check orientation
   useEffect(() => {
@@ -46,26 +62,79 @@ export default function App() {
     return () => window.removeEventListener('resize', checkOrientation);
   }, []);
 
-  // Permission for orientation (iOS)
-  const requestPermission = async () => {
-    // Check if DeviceOrientationEvent exists
-    if (typeof DeviceOrientationEvent !== 'undefined' && typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
-      try {
-        const response = await (DeviceOrientationEvent as any).requestPermission();
-        if (response === 'granted') {
-          setPermissionGranted(true);
-          return true;
-        }
-      } catch (e) {
-        console.error('Error requesting orientation permission:', e);
-      }
-      // On error, let's still try to start, manually triggering if needed
-      setPermissionGranted(true);
-      return true;
-    } else {
-      setPermissionGranted(true);
-      return true;
+  // Music Logic
+  useEffect(() => {
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
+      audioRef.current.loop = true;
     }
+    
+    const playMusic = async () => {
+      if (!audioRef.current) return;
+      
+      let url = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3'; // Default menu music
+      if (gameState === 'GAME' && selectedCategory?.musicUrl) {
+        url = selectedCategory.musicUrl;
+      } else if (gameState === 'RESULT') {
+        url = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3';
+      }
+
+      if (audioRef.current.src !== url) {
+        audioRef.current.src = url;
+        audioRef.current.load();
+      }
+
+      if (!isMuted && (gameState !== 'COUNTDOWN')) {
+        try {
+          await audioRef.current.play();
+        } catch (e) {
+          console.log("Autoplay blocked or interuppted");
+        }
+      } else {
+        audioRef.current.pause();
+      }
+    };
+
+    playMusic();
+  }, [gameState, selectedCategory, isMuted]);
+
+  const toggleMute = () => setIsMuted(!isMuted);
+
+  // Handle Background Upload
+  const handleBgUpload = (e: ChangeEvent<HTMLInputElement>, catId: string) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const url = event.target?.result as string;
+        setUserCategories(prev => prev.map(c => 
+          c.id === catId ? { ...c, bgImage: url } : c
+        ));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const updateOpacity = (catId: string, opacity: number) => {
+    setUserCategories(prev => prev.map(c => 
+      c.id === catId ? { ...c, bgOpacity: opacity } : c
+    ));
+  };
+
+  const handleMusicUpload = (e: ChangeEvent<HTMLInputElement>, catId: string) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setUserCategories(prev => prev.map(c => 
+        c.id === catId ? { ...c, musicUrl: url } : c
+      ));
+    }
+  };
+
+  const selectMusicPreset = (catId: string, url: string) => {
+    setUserCategories(prev => prev.map(c => 
+      c.id === catId ? { ...c, musicUrl: url } : c
+    ));
   };
 
   // Start game logic
@@ -76,7 +145,6 @@ export default function App() {
     setResults([]);
     setCountdownValue(3);
     setGameState('COUNTDOWN');
-    lastTiltRef.current = 'NONE';
   }, []);
 
   // Countdown timer effect
@@ -97,10 +165,10 @@ export default function App() {
     return () => clearInterval(timer);
   }, [gameState, gameDuration]);
 
-  // Handle tilt
+  // No-op for orientation logic as we use touch controls
   useEffect(() => {
-    // Orientation detection disabled per user request to use touch zones instead
-  }, [gameState, permissionGranted, isLandscape]);
+    // Left empty per design
+  }, []);
 
   // Sync game timer
   useEffect(() => {
@@ -140,50 +208,109 @@ export default function App() {
     setResults([]);
   };
 
+  // Selection Helpers
+  const currentCategoryModel = useMemo(() => 
+    userCategories.find(c => c.id === selectedCategory?.id) || selectedCategory
+  , [userCategories, selectedCategory]);
+
   return (
-    <div className="min-h-screen text-white font-sans overflow-hidden select-none relative">
-      <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-[120px] h-[25px] bg-black rounded-b-[15px] z-[100] ${isLandscape ? 'hidden' : 'hidden sm:block'}`} />
+    <div className="min-h-screen text-morandi-text font-sans overflow-y-auto select-none relative transition-colors duration-1000 scroll-smooth">
+      
+      {/* Dynamic Background Image Overlay */}
+      <AnimatePresence>
+        {currentCategoryModel?.bgImage && (
+          <motion.div
+            key={currentCategoryModel.id}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: currentCategoryModel.bgOpacity || 0.3 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-0 pointer-events-none"
+          >
+            <img 
+              src={currentCategoryModel.bgImage} 
+              alt="" 
+              className="w-full h-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="fixed top-6 right-6 z-[110] flex gap-2">
+        <button 
+          onClick={toggleMute}
+          className="w-10 h-10 glass-button rounded-full flex items-center justify-center active:scale-95 transition-transform"
+        >
+          {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+        </button>
+      </div>
+
       <AnimatePresence mode="wait">
         {gameState === 'HOME' && (
           <motion.div 
             key="home"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.1 }}
-            className={`p-6 max-w-4xl mx-auto h-screen flex flex-col ${isLandscape ? 'md:pt-10' : ''}`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, filter: 'blur(10px)' }}
+            className={`p-6 max-w-6xl mx-auto min-h-screen flex flex-col relative z-10 ${isLandscape ? 'flex-row gap-12 pt-10' : ''}`}
           >
-            <div className={`text-center mb-8 ${isLandscape ? 'mt-0 flex items-center justify-center gap-6' : 'mt-12'}`}>
-              <div>
-                <h1 className="text-2xl font-extrabold tracking-[1px] mb-2 uppercase">
-                  比手畫腳 ⚡️
+            {/* Portrait Header vs Landscape Sidebar */}
+            <div className={`${isLandscape ? 'w-64 flex flex-col justify-center' : 'text-center mt-12 mb-12'}`}>
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="mb-4"
+              >
+                <Palette className="mx-auto text-morandi-clay mb-4" size={40} />
+                <h1 className="text-3xl font-serif italic font-extrabold tracking-tight mb-2 text-morandi-text">
+                  Heads Up!
                 </h1>
-                <p className="text-[13px] opacity-80 font-medium tracking-wide">
-                  放於額頭 • 全民同樂
+                <p className="text-[14px] uppercase tracking-[4px] text-morandi-clay font-bold opacity-80">
+                  Morandi Edition
                 </p>
-              </div>
+              </motion.div>
+              
+              {isLandscape && (
+                <div className="mt-12 space-y-4">
+                  <div className="text-[11px] uppercase tracking-[2px] font-bold opacity-40">遊戲指南</div>
+                  <p className="text-sm leading-relaxed opacity-60">
+                    選一個你感興趣的類別，將電話貼緊額頭，讓朋友用演技帶領你通關。
+                  </p>
+                </div>
+              )}
             </div>
 
-            <div className="text-[12px] uppercase tracking-[2px] mb-4 ml-1 opacity-70 font-bold">
-              選擇題庫類別
-            </div>
-            <div className={`grid gap-4 flex-1 overflow-y-auto pb-8 mask-fade scrollbar-hide ${isLandscape ? 'grid-cols-3 lg:grid-cols-4' : 'grid-cols-2'}`}>
-              {WORD_BANK.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => {
-                    setSelectedCategory(cat);
-                    setGameState('SETUP');
-                  }}
-                  className="glass-button p-6 rounded-[24px] flex flex-col items-center justify-center gap-3 active:scale-95 transition-transform"
-                >
-                  <span className="text-4xl">{cat.icon}</span>
-                  <span className="font-bold text-lg">{cat.name}</span>
-                </button>
-              ))}
-            </div>
-            
-            <div className="text-center py-4 text-gray-500 text-xs flex items-center justify-center gap-2">
-              <Settings2 size={12} /> 手機橫放額頭，準備開始
+            <div className="flex-1 flex flex-col min-h-0">
+              <div className="flex justify-between items-end mb-6">
+                <div className="text-[12px] uppercase tracking-[3px] opacity-40 font-bold">
+                  題庫類別庫
+                </div>
+              </div>
+
+              <div className={`grid gap-6 flex-1 overflow-y-auto pb-12 mask-fade scrollbar-hide ${isLandscape ? 'grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
+                {userCategories.map((cat) => (
+                  <motion.button
+                    key={cat.id}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      setSelectedCategory(cat);
+                      setGameState('SETUP');
+                    }}
+                    className="glass-card group overflow-hidden relative p-8 rounded-[32px] text-left flex flex-col justify-end min-h-[160px] transition-all hover:border-morandi-clay/50"
+                  >
+                    {cat.bgImage && (
+                      <div className="absolute inset-0 z-0 opacity-20 group-hover:opacity-40 transition-opacity">
+                         <img src={cat.bgImage} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      </div>
+                    )}
+                    <h3 className="font-serif italic text-2xl font-black relative z-10 text-morandi-text">{cat.name}</h3>
+                    <div className="text-[10px] uppercase tracking-[2px] font-bold mt-2 opacity-50 relative z-10">
+                      {cat.words.length} 題
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
             </div>
           </motion.div>
         )}
@@ -191,76 +318,147 @@ export default function App() {
         {gameState === 'SETUP' && selectedCategory && (
           <motion.div 
             key="setup"
-            initial={{ x: 300, opacity: 0 }}
+            initial={{ x: 100, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -300, opacity: 0 }}
-            className="p-8 h-screen flex flex-col max-w-4xl mx-auto"
+            exit={{ x: -100, opacity: 0 }}
+            className="p-8 min-h-screen flex flex-col max-w-6xl mx-auto relative z-10 pb-20"
           >
-            <button 
-              onClick={() => setGameState('HOME')}
-              className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mb-8 shrink-0"
-            >
-              <ChevronLeft size={20} />
-            </button>
-
-            <div className={`flex-1 flex flex-col ${isLandscape ? 'md:flex-row gap-12' : ''}`}>
-              <div className={`flex items-center gap-4 mb-8 ${isLandscape ? 'md:flex-col md:w-48 text-center' : ''}`}>
-                <span className="text-6xl drop-shadow-lg">{selectedCategory.icon}</span>
-                <div>
-                  <h2 className="text-2xl font-extrabold uppercase tracking-wide whitespace-nowrap">{selectedCategory.name}</h2>
-                  <div className="text-[12px] uppercase tracking-[2px] opacity-70 font-bold mt-1">
-                    遊玩時間
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex-1">
-                <div className={`grid gap-4 mb-8 ${isLandscape ? 'grid-cols-4' : 'grid-cols-2'}`}>
-                  {[60, 90, 120, 180].map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => setGameDuration(t)}
-                      className={`p-5 rounded-2xl border transition-all ${
-                        gameDuration === t 
-                          ? 'bg-accent border-accent text-[#333] font-black' 
-                          : 'glass-button text-white'
-                      }`}
-                    >
-                      {t} 秒
-                    </button>
-                  ))}
-                </div>
-
-                <div className="text-[12px] uppercase tracking-[2px] mb-4 ml-1 opacity-70 font-bold">
-                  遊戲規則
-                </div>
-                <div className="bg-white/5 p-6 rounded-3xl border border-white/10 mb-8 backdrop-blur-sm">
-                  <ul className="text-sm text-white/80 space-y-2 leading-relaxed">
-                    <li className="flex gap-2"><span>1.</span> 把手機橫放放在額頭上測試</li>
-                    <li className="flex gap-2">
-                       <span>2.</span> 答對時：
-                       <span className="font-bold underline decoration-green-400">橫向點右側</span> / 
-                       <span className="font-bold underline decoration-green-400">直向點上方</span>
-                    </li>
-                    <li className="flex gap-2">
-                       <span>3.</span> 跳過時：
-                       <span className="font-bold underline decoration-orange-400">橫向點左側</span> / 
-                       <span className="font-bold underline decoration-orange-400">直向點下方</span>
-                    </li>
-                  </ul>
+            <div className="flex justify-between items-center mb-8 shrink-0">
+              <button 
+                onClick={() => setGameState('HOME')}
+                className="w-12 h-12 rounded-full glass-button flex items-center justify-center shrink-0"
+              >
+                <ChevronLeft size={24} />
+              </button>
+              
+              <div className="flex flex-wrap items-center justify-end gap-3">
+                <label className="glass-button px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 cursor-pointer whitespace-nowrap">
+                  <Music2 size={14} /> 上傳音樂
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    accept="audio/*" 
+                    onChange={(e) => handleMusicUpload(e, selectedCategory.id)} 
+                  />
+                </label>
+                <label className="glass-button px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 cursor-pointer whitespace-nowrap">
+                  <Upload size={14} /> 上傳背景
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    accept="image/*" 
+                    onChange={(e) => handleBgUpload(e, selectedCategory.id)} 
+                  />
+                </label>
+                <div className="flex items-center gap-2 glass-button px-4 py-2 rounded-full whitespace-nowrap">
+                  <ImageIcon size={14} className="opacity-50" />
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="1" 
+                    step="0.1" 
+                    value={currentCategoryModel?.bgOpacity || 0.3} 
+                    onChange={(e) => updateOpacity(selectedCategory.id, parseFloat(e.target.value))}
+                    className="w-16 accent-morandi-clay cursor-pointer"
+                  />
                 </div>
               </div>
             </div>
 
-            <button
-              onClick={async () => {
-                const ok = await requestPermission();
-                if (ok) startGame(selectedCategory);
-              }}
-              className="w-full bg-white text-purple-accent py-5 rounded-2xl font-black text-xl flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-xl shrink-0 mt-auto"
-            >
-              立刻開始 <Play fill="currentColor" size={20} />
-            </button>
+            <div className={`flex-1 flex flex-col ${isLandscape ? 'md:flex-row gap-16' : ''}`}>
+               <div className={`mb-12 ${isLandscape ? 'md:w-80 flex flex-col' : ''}`}>
+                  <h2 className="text-5xl font-serif italic font-extrabold mb-4 text-morandi-text">
+                    {selectedCategory.name}
+                  </h2>
+                  <div className="h-1 w-20 bg-morandi-clay mb-8" />
+                  
+                  <div className="space-y-8">
+                    <div>
+                      <div className="text-[12px] uppercase tracking-[3px] opacity-40 font-bold mb-4">
+                        遊戲时长配置
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        {[60, 90, 120, 180].map((t) => (
+                          <button
+                            key={t}
+                            onClick={() => setGameDuration(t)}
+                            className={`py-4 rounded-2xl border transition-all font-bold text-sm ${
+                              gameDuration === t 
+                                ? 'bg-morandi-clay border-morandi-clay text-white shadow-lg' 
+                                : 'glass-button hover:bg-white/10'
+                            }`}
+                          >
+                            {t}s
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="text-[12px] uppercase tracking-[3px] opacity-40 font-bold mb-4">
+                        音樂預選
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {MUSIC_PRESETS.map((p) => (
+                          <button
+                            key={p.name}
+                            onClick={() => selectMusicPreset(selectedCategory.id, p.url)}
+                            className={`py-3 px-2 rounded-xl border text-[11px] font-bold transition-all truncate ${
+                              currentCategoryModel?.musicUrl === p.url
+                                ? 'bg-morandi-clay/40 border-morandi-clay text-white'
+                                : 'glass-button border-white/10'
+                            }`}
+                          >
+                            {p.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+               </div>
+
+               <div className="flex-1 flex flex-col pt-8">
+                  <div className="text-[12px] uppercase tracking-[3px] opacity-40 font-bold mb-6">
+                    玩家指南
+                  </div>
+                  <div className="glass-card p-10 rounded-[40px] space-y-8 mb-10">
+                     <div className="flex gap-6 items-start">
+                        <div className="w-10 h-10 rounded-full bg-morandi-misty-blue/20 flex items-center justify-center shrink-0 text-morandi-misty-blue">1</div>
+                        <div>
+                           <h4 className="font-bold text-lg mb-1">貼緊額頭</h4>
+                           <p className="text-sm opacity-60">將手機屏幕朝外貼在額頭上，讓你的隊友看到文字。</p>
+                        </div>
+                     </div>
+                     <div className="flex gap-6 items-start">
+                        <div className="w-10 h-10 rounded-full bg-morandi-sage-green/20 flex items-center justify-center shrink-0 text-morandi-sage-green">2</div>
+                        <div>
+                           <h4 className="font-bold text-lg mb-1">正確判定</h4>
+                           <p className="text-sm opacity-60">
+                             橫向：點擊螢幕 <span className="text-morandi-sage-green font-bold text-base">右側</span><br/>
+                             直向：點擊螢幕 <span className="text-morandi-sage-green font-bold text-base">上方</span>
+                           </p>
+                        </div>
+                     </div>
+                     <div className="flex gap-6 items-start">
+                        <div className="w-10 h-10 rounded-full bg-morandi-dusty-rose/20 flex items-center justify-center shrink-0 text-morandi-dusty-rose">3</div>
+                        <div>
+                           <h4 className="font-bold text-lg mb-1">跳過/不確定</h4>
+                           <p className="text-sm opacity-60">
+                             橫向：點擊螢幕 <span className="text-morandi-dusty-rose font-bold text-base">左側</span><br/>
+                             直向：點擊螢幕 <span className="text-morandi-dusty-rose font-bold text-base">下方</span>
+                           </p>
+                        </div>
+                     </div>
+                  </div>
+
+                  <button
+                    onClick={() => startGame(selectedCategory)}
+                    className="w-full bg-morandi-clay text-white py-6 rounded-[32px] font-black text-xl flex items-center justify-center gap-3 active:scale-95 transition-transform shadow-2xl shadow-morandi-clay/40 shrink-0"
+                  >
+                    進入挑戰 <Play fill="currentColor" size={24} />
+                  </button>
+               </div>
+            </div>
           </motion.div>
         )}
 
@@ -270,18 +468,18 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/60 backdrop-blur-3xl"
+            className="fixed inset-0 z-[120] flex flex-col items-center justify-center bg-morandi-background"
           >
             <motion.div
               key={countdownValue}
-              initial={{ scale: 0, opacity: 0 }}
+              initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: [1, 1.2, 1], opacity: 1 }}
-              className="text-[180px] font-black italic drop-shadow-2xl text-accent"
+              className="text-[200px] font-serif font-black italic text-morandi-clay morandi-text-shadow"
             >
               {countdownValue}
             </motion.div>
-            <div className="text-2xl uppercase tracking-[10px] font-black opacity-50 mt-8">
-              READY?
+            <div className="text-xs uppercase tracking-[15px] font-bold opacity-30 mt-12">
+              Focus & Ready
             </div>
           </motion.div>
         )}
@@ -292,112 +490,100 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className={`fixed inset-0 z-50 flex items-center justify-center transition-colors duration-300 ${
-              feedback === 'CORRECT' ? 'bg-green-500' : feedback === 'PASS' ? 'bg-orange-500' : 'bg-blue-600'
-            }`}
+            className={`fixed inset-0 z-50 flex items-center justify-center transition-colors duration-500 bg-morandi-background`}
           >
             {/* Split Touch Controls */}
             <div className={`absolute inset-0 flex z-30 select-none ${isLandscape ? 'flex-row' : 'flex-col'}`}>
                 {isLandscape ? (
                   <>
                     <div 
-                      className="flex-1 cursor-pointer flex items-center justify-center active:bg-orange-500/20 transition-colors"
+                      className="flex-1 cursor-pointer flex items-center justify-center active:bg-morandi-dusty-rose/10 transition-colors"
                       onPointerDown={(e) => {
                         e.stopPropagation();
                         triggerAnswer(false);
                       }}
-                    >
-                      <span className="text-white font-black text-2xl opacity-0">跳過</span>
-                    </div>
+                    />
                     <div 
-                      className="flex-1 cursor-pointer flex items-center justify-center active:bg-green-500/20 transition-colors"
+                      className="flex-1 cursor-pointer flex items-center justify-center active:bg-morandi-sage-green/10 transition-colors"
                       onPointerDown={(e) => {
                         e.stopPropagation();
                         triggerAnswer(true);
                       }}
-                    >
-                      <span className="text-white font-black text-2xl opacity-0">正確</span>
-                    </div>
+                    />
                   </>
                 ) : (
                   <>
                     <div 
-                      className="flex-1 cursor-pointer flex items-center justify-center active:bg-green-500/20 transition-colors"
+                      className="flex-1 cursor-pointer flex items-center justify-center active:bg-morandi-sage-green/10 transition-colors"
                       onPointerDown={(e) => {
                         e.stopPropagation();
                         triggerAnswer(true);
                       }}
-                    >
-                      <span className="text-white font-black text-2xl opacity-0">正確</span>
-                    </div>
+                    />
                     <div 
-                      className="flex-1 cursor-pointer flex items-center justify-center active:bg-orange-500/20 transition-colors"
+                      className="flex-1 cursor-pointer flex items-center justify-center active:bg-morandi-dusty-rose/10 transition-colors"
                       onPointerDown={(e) => {
                         e.stopPropagation();
                         triggerAnswer(false);
                       }}
-                    >
-                      <span className="text-white font-black text-2xl opacity-0">跳過</span>
-                    </div>
+                    />
                   </>
                 )}
             </div>
 
-            <div className="absolute top-6 left-0 right-0 flex justify-between px-10 items-center z-10 pointer-events-none">
-              <div className="flex items-center gap-2 bg-white/10 backdrop-blur-xl px-5 py-2 rounded-full border border-white/20">
-                <Clock size={16} className="text-accent" />
-                <span className="font-mono font-bold text-2xl">{timeLeft}</span>
+            <div className="absolute top-8 left-0 right-0 flex justify-between px-12 items-center z-40 pointer-events-none">
+              <div className="flex items-center gap-3 glass-card px-6 py-3 rounded-2xl border-morandi-clay/20">
+                <Clock size={18} className="text-morandi-clay" />
+                <span className="font-bold text-2xl text-morandi-text">{timeLeft}</span>
               </div>
-              <div className="hidden sm:block text-white/80 font-black uppercase tracking-[0.2em] text-sm bg-white/5 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/10">
+              <div className="text-morandi-clay/40 font-serif italic text-xl">
                 {selectedCategory?.name}
               </div>
-              <div className="flex items-center gap-2 bg-white/10 backdrop-blur-xl px-5 py-2 rounded-full border border-white/20">
-                <CheckCircle2 size={16} className="text-green-400" />
-                <span className="font-bold text-2xl">{results.filter(r => r.isCorrect).length}</span>
+              <div className="flex items-center gap-3 glass-card px-6 py-3 rounded-2xl border-morandi-clay/20">
+                <CheckCircle2 size={18} className="text-morandi-sage-green" />
+                <span className="font-bold text-2xl text-morandi-text">{results.filter(r => r.isCorrect).length}</span>
               </div>
             </div>
 
-            <div className="text-center px-10 relative z-0 pointer-events-none">
+            <div className="text-center px-12 relative z-0 pointer-events-none">
               <AnimatePresence mode="wait">
                 <motion.h1
                   key={currentWordIndex}
-                  initial={{ y: 80, opacity: 0, rotateX: 45 }}
-                  animate={{ y: 0, opacity: 1, rotateX: 0 }}
-                  exit={{ y: -80, opacity: 0, rotateX: -45 }}
-                  transition={{ type: 'spring', stiffness: 100, damping: 12 }}
-                  className="text-7xl sm:text-9xl font-black tracking-tight drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)] leading-tight"
+                  initial={{ y: 40, opacity: 0, filter: 'blur(10px)' }}
+                  animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
+                  exit={{ y: -40, opacity: 0, filter: 'blur(10px)' }}
+                  transition={{ type: 'spring', stiffness: 120, damping: 15 }}
+                  className="text-[8vw] sm:text-[10vw] font-serif font-extrabold italic tracking-tight text-morandi-text"
                 >
-                  {shuffledWords[currentWordIndex] || '結束了！'}
+                  {shuffledWords[currentWordIndex] || '...'}
                 </motion.h1>
               </AnimatePresence>
             </div>
 
             {feedback && (
               <motion.div 
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 2, opacity: 1 }}
-                exit={{ scale: 3, opacity: 0 }}
-                className="absolute inset-0 flex items-center justify-center pointer-events-none z-20"
+                initial={{ opacity: 0, backgroundColor: 'rgba(255,255,255,0)' }}
+                animate={{ opacity: 1, backgroundColor: feedback === 'CORRECT' ? 'rgba(164, 180, 148, 0.4)' : 'rgba(201, 159, 161, 0.4)' }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 flex items-center justify-center pointer-events-none z-20 backdrop-blur-sm"
               >
-                <div className={`px-10 py-4 rounded-3xl font-black text-4xl shadow-2xl ${
-                  feedback === 'CORRECT' ? 'bg-white text-green-600' : 'bg-white text-orange-600'
-                }`}>
-                  {feedback === 'CORRECT' ? '正確！' : '跳過'}
+                <div className={`px-12 py-6 rounded-full font-serif italic font-black text-5xl text-white shadow-2xl`}>
+                  {feedback === 'CORRECT' ? 'Correct' : 'Skip'}
                 </div>
               </motion.div>
             )}
 
             {/* Visual labels for the split areas (subtle) */}
-            <div className={`absolute inset-0 flex justify-between px-10 text-[10px] font-bold tracking-[3px] uppercase opacity-30 z-10 pointer-events-none ${isLandscape ? 'items-end pb-4' : 'flex-col items-center py-20'}`}>
+            <div className={`absolute inset-0 flex justify-between px-12 text-[11px] font-bold tracking-[5px] uppercase opacity-20 z-10 pointer-events-none ${isLandscape ? 'items-end pb-8' : 'flex-col items-center py-24'}`}>
               {isLandscape ? (
                 <>
-                  <span>⬅️ 點擊左側跳過</span>
-                  <span>點擊右側答對 ➡️</span>
+                  <span>⬅️ Skip</span>
+                  <span>Correct ➡️</span>
                 </>
               ) : (
                 <>
-                  <span className="rotate-0">⬆️ 點擊上方答對</span>
-                  <span className="rotate-0">⬇️ 點擊下方跳過</span>
+                  <span className="rotate-0">⬆️ Correct ⬆️</span>
+                  <span className="rotate-0">⬇️ Skip ⬇️</span>
                 </>
               )}
             </div>
@@ -407,88 +593,83 @@ export default function App() {
         {gameState === 'RESULT' && (
           <motion.div 
             key="result"
-            initial={{ opacity: 0, y: 100 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`p-8 h-screen flex flex-col mx-auto ${isLandscape ? 'max-w-4xl' : 'max-w-lg'}`}
+            initial={{ opacity: 0, scale: 1.1 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className={`p-10 min-h-screen flex flex-col mx-auto relative z-10 pb-20 ${isLandscape ? 'max-w-6xl' : 'max-w-2xl'}`}
           >
-            <div className={`flex flex-col flex-1 overflow-hidden ${isLandscape ? 'md:flex-row gap-8' : ''}`}>
-               <div className={`${isLandscape ? 'md:w-64 pt-4' : 'text-center mb-10 pt-8'}`}>
+            <div className={`flex flex-col flex-1 overflow-hidden ${isLandscape ? 'md:flex-row gap-16' : ''}`}>
+               <div className={`${isLandscape ? 'md:w-80 pt-8 flex flex-col justify-center' : 'text-center mb-12 py-8'}`}>
                   <motion.div 
-                    initial={{ scale: 0 }}
-                    animate={{ scale: [0, 1.2, 1] }}
-                    className="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-tr from-yellow-400 to-amber-200 rounded-full flex items-center justify-center mx-auto mb-6 text-black shadow-xl shadow-yellow-400/20"
+                    initial={{ scale: 0, rotate: -20 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    className="w-24 h-24 bg-morandi-clay rounded-full flex items-center justify-center mx-auto mb-8 text-white shadow-2xl shadow-morandi-clay/30"
                   >
                     <Trophy size={48} />
                   </motion.div>
                   <div className="text-center">
-                    <h2 className="text-3xl font-extrabold mb-2 italic tracking-tighter shadow-sm uppercase">AWESOME!</h2>
-                    <div className="text-[12px] uppercase tracking-[2px] opacity-70 font-bold mb-6">
-                      遊戲戰報
+                    <h2 className="text-4xl font-serif italic font-extrabold mb-2 tracking-tight text-morandi-text">Magnificent!</h2>
+                    <div className="text-[12px] uppercase tracking-[4px] opacity-40 font-bold mb-10">
+                      Game Statistics
                     </div>
                   </div>
 
                   <div className={`grid grid-cols-2 gap-4 ${isLandscape ? 'md:grid-cols-1' : ''}`}>
-                    <div className="bg-black/20 border border-white/10 p-4 rounded-3xl text-center">
-                      <div className="text-green-400 font-black text-4xl mb-1">
+                    <div className="glass-card p-6 rounded-[32px] text-center">
+                      <div className="text-morandi-sage-green font-serif italic font-black text-5xl mb-2">
                         {results.filter(r => r.isCorrect).length}
                       </div>
-                      <div className="text-[10px] uppercase font-black text-white/60 tracking-widest">答對</div>
+                      <div className="text-[10px] uppercase font-bold text-morandi-text/40 tracking-widest">正確</div>
                     </div>
-                    <div className="bg-black/20 border border-white/10 p-4 rounded-3xl text-center">
-                      <div className="text-orange-400 font-black text-4xl mb-1">
+                    <div className="glass-card p-6 rounded-[32px] text-center">
+                      <div className="text-morandi-dusty-rose font-serif italic font-black text-5xl mb-2">
                         {results.filter(r => !r.isCorrect).length}
                       </div>
-                      <div className="text-[10px] uppercase font-black text-white/60 tracking-widest">跳過</div>
+                      <div className="text-[10px] uppercase font-bold text-morandi-text/40 tracking-widest">跳過</div>
                     </div>
                   </div>
                </div>
 
-               <div className="flex-1 flex flex-col overflow-hidden min-h-0 pt-6">
-                  <div className="text-[12px] uppercase tracking-[2px] mb-4 ml-1 opacity-70 font-bold">
-                    詳情清單
+               <div className="flex-1 flex flex-col overflow-hidden min-h-0 pt-8">
+                  <div className="text-[12px] uppercase tracking-[3px] opacity-40 font-bold mb-6">
+                    答題詳情
                   </div>
-                  <div className="flex-1 overflow-y-auto mb-8 pr-2 custom-scrollbar">
-                    <div className={`grid gap-3 ${isLandscape ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                  <div className="flex-1 overflow-y-auto mb-10 pr-4 custom-scrollbar">
+                    <div className={`grid gap-4 ${isLandscape ? 'grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
                       {results.map((res, i) => (
                         <motion.div 
                           key={i}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: i * 0.05 }}
-                          className="flex items-center justify-between bg-white/5 p-4 rounded-2xl border border-white/5"
+                          className="flex items-center justify-between glass-card p-5 rounded-[24px] border-morandi-clay/5"
                         >
-                          <span className="font-bold text-lg truncate pr-2">{res.word}</span>
+                          <span className="font-bold text-lg truncate pr-4 text-morandi-text">{res.word}</span>
                           {res.isCorrect ? (
-                            <CheckCircle2 className="text-green-500 shrink-0" size={20} />
+                            <CheckCircle2 className="text-morandi-sage-green shrink-0" size={22} />
                           ) : (
-                            <XCircle className="text-orange-500 shrink-0" size={20} />
+                            <XCircle className="text-morandi-dusty-rose shrink-0" size={22} />
                           )}
                         </motion.div>
                       ))}
-                      {results.length === 0 && (
-                        <div className="text-center py-12 text-gray-500 italic opacity-50 font-serif col-span-full">
-                            一段傳奇尚未開始...
-                        </div>
-                      )}
                     </div>
                   </div>
                </div>
             </div>
 
-            <div className="flex gap-4 py-6 mt-auto">
+            <div className="flex gap-4 py-8 mt-auto">
               <button
                 onClick={resetGame}
-                className="flex-1 glass-button text-white py-5 rounded-3xl font-bold active:scale-95 transition-transform"
+                className="flex-1 glass-button py-6 rounded-[32px] font-bold active:scale-95 transition-transform"
               >
-                主頁
+                返回主選單
               </button>
               <button
                 onClick={() => {
                   if (selectedCategory) startGame(selectedCategory);
                 }}
-                className="flex-[2] bg-white text-purple-accent py-5 rounded-3xl font-black flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-xl"
+                className="flex-[2] bg-morandi-clay text-white py-6 rounded-[32px] font-black italic text-lg flex items-center justify-center gap-3 active:scale-95 transition-transform shadow-2xl shadow-morandi-clay/20"
               >
-                再玩一次 <RotateCcw size={20} />
+                再次挑戰 <RotateCcw size={22} />
               </button>
             </div>
           </motion.div>
