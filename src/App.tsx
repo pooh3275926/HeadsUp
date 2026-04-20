@@ -230,7 +230,7 @@ export default function App() {
               >
                 <Palette className="mx-auto text-morandi-clay mb-4" size={40} />
                 <h1 className="text-3xl font-serif italic font-extrabold tracking-tight mb-2 text-morandi-text">
-                  Heads Up!
+                  Let’s play charades!
                 </h1>
               </motion.div>
               
