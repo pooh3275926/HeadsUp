@@ -36,13 +36,12 @@ export default function App() {
   
   // Customization State
   const [userCategories, setUserCategories] = useState<Category[]>(WORD_BANK);
-  const [isMuted, setIsMuted] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const MUSIC_PRESETS = [
-    { name: 'Praise', url: 'https://github.com/pooh3275926/HeadsUp/raw/refs/heads/main/public/Praise%20Elevation%20Worship.mp3' },
-    { name: '火影忍者', url: 'https://github.com/pooh3275926/HeadsUp/raw/refs/heads/main/public/Naruto%20Shippuden%20OP16.mp3' },
+    { name: 'Praise', url: 'https://pooh3275926.github.io/HeadsUp/public/Praise%20Elevation%20Worship.mp3' },
+    { name: '火影忍者', url: 'https://pooh3275926.github.io/HeadsUp/public/Naruto%20Shippuden%20OP16.mp3' },
   ];
 
   // Check orientation
@@ -65,11 +64,10 @@ export default function App() {
     const playMusic = async () => {
       if (!audioRef.current) return;
       
-      let url = 'https://github.com/pooh3275926/HeadsUp/raw/refs/heads/main/public/Praise%20Elevation%20Worship.mp3'; // Default menu music
-      if ((gameState === 'GAME' || gameState === 'SETUP') && selectedCategory?.musicUrl) {
+      let url = 'https://pooh3275926.github.io/HeadsUp/public/Praise%20Elevation%20Worship.mp3'; // Default menu music
+      // Use category music ONLY during GAME, RESULT, and COUNTDOWN states
+      if ((gameState === 'GAME' || gameState === 'RESULT' || gameState === 'COUNTDOWN') && selectedCategory?.musicUrl) {
         url = selectedCategory.musicUrl;
-      } else if (gameState === 'RESULT') {
-        url = 'https://github.com/pooh3275926/HeadsUp/raw/refs/heads/main/public/Praise%20Elevation%20Worship.mp3';
       }
 
       if (audioRef.current.src !== url) {
@@ -77,21 +75,18 @@ export default function App() {
         audioRef.current.load();
       }
 
-      if (!isMuted && (gameState !== 'COUNTDOWN')) {
+      // Never interrupt music except for specific pause needs
+      if (audioRef.current.paused) {
         try {
           await audioRef.current.play();
         } catch (e) {
-          console.log("Autoplay blocked or interuppted");
+          console.log("Autoplay blocked or interrupted");
         }
-      } else {
-        audioRef.current.pause();
       }
     };
 
     playMusic();
-  }, [gameState, selectedCategory, isMuted]);
-
-  const toggleMute = () => setIsMuted(!isMuted);
+  }, [gameState, selectedCategory]);
 
   const selectMusicPreset = (catId: string, url: string) => {
     setUserCategories(prev => prev.map(c => 
@@ -173,6 +168,23 @@ export default function App() {
     setResults([]);
   };
 
+  const getDynamicFontSize = (word: string) => {
+    if (!word) return 'text-[8vw]';
+    const len = word.length;
+    if (isLandscape) {
+      if (len <= 2) return 'text-[22vw]';
+      if (len <= 4) return 'text-[18vw]';
+      if (len <= 6) return 'text-[14vw]';
+      return 'text-[10vw]';
+    } else {
+      // Portrait mode - bigger fonts as requested
+      if (len <= 2) return 'text-[32vw]';
+      if (len <= 4) return 'text-[24vw]';
+      if (len <= 6) return 'text-[18vw]';
+      return 'text-[14vw]';
+    }
+  };
+
   return (
     <div className="min-h-screen text-morandi-text font-sans overflow-y-auto select-none relative transition-colors duration-1000 scroll-smooth">
       
@@ -196,13 +208,8 @@ export default function App() {
         )}
       </AnimatePresence>
 
+      {/* Top controls container */}
       <div className="fixed top-6 right-6 z-[110] flex gap-2">
-        <button 
-          onClick={toggleMute}
-          className="w-10 h-10 glass-button rounded-full flex items-center justify-center active:scale-95 transition-transform"
-        >
-          {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-        </button>
       </div>
 
       <AnimatePresence mode="wait">
@@ -493,7 +500,7 @@ export default function App() {
                   animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
                   exit={{ y: -40, opacity: 0, filter: 'blur(10px)' }}
                   transition={{ type: 'spring', stiffness: 120, damping: 15 }}
-                  className="text-[8vw] sm:text-[10vw] font-serif font-extrabold italic tracking-tight text-morandi-text"
+                  className={`font-serif font-extrabold italic tracking-tight text-morandi-text leading-none break-all ${getDynamicFontSize(shuffledWords[currentWordIndex] || '')}`}
                 >
                   {shuffledWords[currentWordIndex] || '...'}
                 </motion.h1>
@@ -601,7 +608,7 @@ export default function App() {
                 onClick={resetGame}
                 className="flex-1 glass-button py-6 rounded-[32px] font-bold active:scale-95 transition-transform"
               >
-                返回主選單
+                返回
               </button>
               <button
                 onClick={() => {
