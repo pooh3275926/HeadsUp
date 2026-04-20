@@ -238,7 +238,7 @@ export default function App() {
                 <div className="mt-12 space-y-4">
                   <div className="text-[11px] uppercase tracking-[2px] font-bold opacity-70">遊戲指南</div>
                   <p className="text-sm leading-relaxed opacity-80">
-                    選一個你感興趣的類別，將電話貼緊額頭，讓朋友用演技帶領你通關。
+                    選一個你感興趣的類別，將手機貼緊額頭，讓朋友用演技或話語帶領你通關。
                   </p>
                 </div>
               )}
