@@ -1,8 +1,7 @@
-import { useState, useEffect, useCallback, useRef, useMemo, ChangeEvent } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Play, 
-  Settings2, 
   Trophy, 
   RotateCcw, 
   ChevronLeft, 
@@ -11,10 +10,7 @@ import {
   XCircle,
   Volume2,
   VolumeX,
-  Upload,
-  Image as ImageIcon,
   Palette,
-  Music2,
   Home as HomeIcon
 } from 'lucide-react';
 import { WORD_BANK, Category } from './constants/wordBank';
@@ -43,14 +39,10 @@ export default function App() {
   const [isMuted, setIsMuted] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const musicInputRef = useRef<HTMLInputElement | null>(null);
 
   const MUSIC_PRESETS = [
-    { name: '歡樂冒險', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' },
-    { name: '緊張刺激', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3' },
-    { name: '輕快節奏', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3' },
-    { name: '動感旋律', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3' },
+    { name: 'Praise', url: 'https://github.com/pooh3275926/HeadsUp/raw/refs/heads/main/public/Praise%20Elevation%20Worship.mp3' },
+    { name: '火影忍者', url: 'https://github.com/pooh3275926/HeadsUp/raw/refs/heads/main/public/Naruto%20Shippuden%20OP16.mp3' },
   ];
 
   // Check orientation
@@ -73,11 +65,11 @@ export default function App() {
     const playMusic = async () => {
       if (!audioRef.current) return;
       
-      let url = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3'; // Default menu music
-      if (gameState === 'GAME' && selectedCategory?.musicUrl) {
+      let url = 'https://github.com/pooh3275926/HeadsUp/raw/refs/heads/main/public/Praise%20Elevation%20Worship.mp3'; // Default menu music
+      if ((gameState === 'GAME' || gameState === 'SETUP') && selectedCategory?.musicUrl) {
         url = selectedCategory.musicUrl;
       } else if (gameState === 'RESULT') {
-        url = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3';
+        url = 'https://github.com/pooh3275926/HeadsUp/raw/refs/heads/main/public/Praise%20Elevation%20Worship.mp3';
       }
 
       if (audioRef.current.src !== url) {
@@ -101,41 +93,13 @@ export default function App() {
 
   const toggleMute = () => setIsMuted(!isMuted);
 
-  // Handle Background Upload
-  const handleBgUpload = (e: ChangeEvent<HTMLInputElement>, catId: string) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const url = event.target?.result as string;
-        setUserCategories(prev => prev.map(c => 
-          c.id === catId ? { ...c, bgImage: url } : c
-        ));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const updateOpacity = (catId: string, opacity: number) => {
-    setUserCategories(prev => prev.map(c => 
-      c.id === catId ? { ...c, bgOpacity: opacity } : c
-    ));
-  };
-
-  const handleMusicUpload = (e: ChangeEvent<HTMLInputElement>, catId: string) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setUserCategories(prev => prev.map(c => 
-        c.id === catId ? { ...c, musicUrl: url } : c
-      ));
-    }
-  };
-
   const selectMusicPreset = (catId: string, url: string) => {
     setUserCategories(prev => prev.map(c => 
       c.id === catId ? { ...c, musicUrl: url } : c
     ));
+    
+    // Also update selectedCategory so SETUP screen reflects change immediately
+    setSelectedCategory(prev => prev ? { ...prev, musicUrl: url } : null);
   };
 
   // Start game logic
@@ -209,26 +173,21 @@ export default function App() {
     setResults([]);
   };
 
-  // Selection Helpers
-  const currentCategoryModel = useMemo(() => 
-    userCategories.find(c => c.id === selectedCategory?.id) || selectedCategory
-  , [userCategories, selectedCategory]);
-
   return (
     <div className="min-h-screen text-morandi-text font-sans overflow-y-auto select-none relative transition-colors duration-1000 scroll-smooth">
       
-      {/* Dynamic Background Image Overlay */}
+      {/* Dynamic Background Image Overlay - Hidden on HOME screen */}
       <AnimatePresence>
-        {currentCategoryModel?.bgImage && (
+        {gameState !== 'HOME' && selectedCategory?.bgImage && (
           <motion.div
-            key={currentCategoryModel.id}
+            key={selectedCategory.id}
             initial={{ opacity: 0 }}
-            animate={{ opacity: currentCategoryModel.bgOpacity || 0.3 }}
+            animate={{ opacity: 0.5 }} // Fixed 50% opacity
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-0 pointer-events-none"
           >
             <img 
-              src={currentCategoryModel.bgImage} 
+              src={selectedCategory.bgImage} 
               alt="" 
               className="w-full h-full object-cover"
               referrerPolicy="no-referrer"
@@ -301,7 +260,7 @@ export default function App() {
                     className="glass-card group overflow-hidden relative p-8 rounded-[32px] text-left flex flex-col justify-end min-h-[160px] transition-all hover:border-morandi-clay/50"
                   >
                     {cat.bgImage && (
-                      <div className="absolute inset-0 z-0 opacity-20 group-hover:opacity-40 transition-opacity">
+                      <div className="absolute inset-0 z-0 opacity-50 group-hover:opacity-70 transition-opacity">
                          <img src={cat.bgImage} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       </div>
                     )}
@@ -331,39 +290,6 @@ export default function App() {
               >
                 <ChevronLeft size={24} />
               </button>
-              
-              <div className="flex flex-wrap items-center justify-end gap-3">
-                <label className="glass-button px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 cursor-pointer whitespace-nowrap">
-                  <Music2 size={14} /> 上傳音樂
-                  <input 
-                    type="file" 
-                    className="hidden" 
-                    accept=".mp3,audio/mpeg,audio/wav,audio/x-m4a,audio/*" 
-                    onChange={(e) => handleMusicUpload(e, selectedCategory.id)} 
-                  />
-                </label>
-                <label className="glass-button px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 cursor-pointer whitespace-nowrap">
-                  <Upload size={14} /> 上傳背景
-                  <input 
-                    type="file" 
-                    className="hidden" 
-                    accept="image/*" 
-                    onChange={(e) => handleBgUpload(e, selectedCategory.id)} 
-                  />
-                </label>
-                <div className="flex items-center gap-2 glass-button px-4 py-2 rounded-full whitespace-nowrap">
-                  <ImageIcon size={14} className="opacity-50" />
-                  <input 
-                    type="range" 
-                    min="0" 
-                    max="1" 
-                    step="0.1" 
-                    value={currentCategoryModel?.bgOpacity || 0.3} 
-                    onChange={(e) => updateOpacity(selectedCategory.id, parseFloat(e.target.value))}
-                    className="w-16 accent-morandi-clay cursor-pointer"
-                  />
-                </div>
-              </div>
             </div>
 
             <div className={`flex-1 flex flex-col ${isLandscape ? 'md:flex-row gap-16' : ''}`}>
@@ -397,7 +323,7 @@ export default function App() {
 
                     <div>
                       <div className="text-[12px] uppercase tracking-[3px] opacity-40 font-bold mb-4">
-                        音樂預選
+                        搭配音樂
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         {MUSIC_PRESETS.map((p) => (
@@ -405,7 +331,7 @@ export default function App() {
                             key={p.name}
                             onClick={() => selectMusicPreset(selectedCategory.id, p.url)}
                             className={`py-3 px-2 rounded-xl border text-[11px] font-bold transition-all truncate ${
-                              currentCategoryModel?.musicUrl === p.url
+                              selectedCategory.musicUrl === p.url
                                 ? 'bg-morandi-clay/40 border-morandi-clay text-white'
                                 : 'glass-button border-white/10'
                             }`}

@@ -11,9 +11,9 @@ export const WORD_BANK: Category[] = [
   {
     id: 'naruto',
     name: '火影忍者',
-    bgImage: 'https://picsum.photos/seed/naruto/1920/1080?blur=4',
-    bgOpacity: 0.3,
-    musicUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+    bgImage: 'https://image-cdn.hypb.st/https%3A%2F%2Fhk.hypebeast.com%2Ffiles%2F2023%2F11%2Fnaruto-live-action-movie-cast-release-date-details-1.jpg?q=90&w=1400&cbr=1&fit=max',
+    bgOpacity: 0.5,
+    musicUrl: 'https://github.com/pooh3275926/HeadsUp/raw/refs/heads/main/public/Naruto%20Shippuden%20OP16.mp3',
     words: [
       '漩渦鳴人', '宇智波佐助', '春野櫻', '旗木卡卡西', '自來也', '綱手', '大蛇丸', '宇智波鼬', '日向雛田', '奈良鹿丸',
       '波風湊', '漩渦玖辛奈', '日向寧次', '李洛克', '天天', '阿凱', '猿飛阿斯瑪', '夕日紅', '犬塚牙', '油女志乃',
@@ -46,7 +46,7 @@ export const WORD_BANK: Category[] = [
     name: '蠟筆小新',
     bgImage: 'https://picsum.photos/seed/shinchan/1920/1080?blur=4',
     bgOpacity: 0.3,
-    musicUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+    musicUrl: 'https://github.com/pooh3275926/HeadsUp/raw/refs/heads/main/public/Praise%20Elevation%20Worship.mp3',
     words: [
       '野原新之助', '野原美冴', '野原廣志', '野原向日葵', '小白', '風間徹', '櫻田妮妮', '佐藤正男', '阿呆', '吉永老師',
       '松坂老師', '上尾老師', '園長先生', '動感超人', '康康肥豬', '肥嘟嘟左衛門', '妮妮的兔子', '小愛', '黑磯', '小山夢冴',
@@ -71,7 +71,7 @@ export const WORD_BANK: Category[] = [
     name: '美食饗宴',
     bgImage: 'https://picsum.photos/seed/food/1920/1080?blur=4',
     bgOpacity: 0.3,
-    musicUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+    musicUrl: 'https://github.com/pooh3275926/HeadsUp/raw/refs/heads/main/public/Praise%20Elevation%20Worship.mp3',
     words: [
       '牛肉麵', '珍珠奶茶', '小籠包', '鹹酥雞', '蚵仔煎', '滷肉飯', '鳳梨酥', '臭豆腐', '豬血糕', '肉圓',
       '義大利麵', '漢堡', '披薩', '拉麵', '壽司', '天婦羅', '石鍋拌飯', '炸雞', '咖哩', '牛排',
@@ -90,7 +90,7 @@ export const WORD_BANK: Category[] = [
     name: '成語大師',
     bgImage: 'https://picsum.photos/seed/idiom/1920/1080?blur=4',
     bgOpacity: 0.3,
-    musicUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
+    musicUrl: 'https://github.com/pooh3275926/HeadsUp/raw/refs/heads/main/public/Praise%20Elevation%20Worship.mp3',
     words: [
       '一見鍾情', '一心一意', '一舉兩得', '一鳴驚人', '一日千里', '一目了然', '九牛一毛', '十拿九穩', '名落孫山', '守株待兔',
       '亡羊補牢', '畫蛇添足', '掩耳盜鈴', '刻舟求劍', '拔苗助長', '對牛彈琴', '井底之蛙', '狐假虎威', '坐井觀天', '投鼠忌器',
