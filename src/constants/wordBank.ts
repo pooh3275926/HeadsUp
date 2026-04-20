@@ -149,7 +149,7 @@ export const WORD_BANK: Category[] = [
     name: '海賊王',
     bgImage: 'https://ramihaha.tw/wp-content/uploads/one-piece.jpg',
     bgOpacity: 0.3,
-    musicUrl: 'https://pooh3275926.github.io/HeadsUp/public/OnePieceOP13.mp3',
+    musicUrl: 'https://pooh3275926.github.io/HeadsUp/public/OnePieceOP5.mp3',
     words: [
       '魯夫', '索隆', '娜美', '騙人布', '香吉士', '喬巴', '羅賓', '佛朗基', '布魯克', '吉貝爾',
       '香克斯', '艾斯', '薩波', '白鬍子', '羅', '基德', '女帝', '艾涅爾', '克洛克達爾', '多佛朗明哥',
