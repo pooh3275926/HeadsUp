@@ -33,6 +33,10 @@ export default function App() {
   const [isLandscape, setIsLandscape] = useState(false);
   const [feedback, setFeedback] = useState<'CORRECT' | 'PASS' | null>(null);
   const [countdownValue, setCountdownValue] = useState(3);
+  const [isMuted, setIsMuted] = useState(() => {
+    const saved = localStorage.getItem('isMuted');
+    return saved === 'true';
+  });
   
   // Customization State
   const [userCategories, setUserCategories] = useState<Category[]>(WORD_BANK);
@@ -76,7 +80,9 @@ export default function App() {
       }
 
       // Never interrupt music except for specific pause needs
-      if (audioRef.current.paused) {
+      if (isMuted) {
+        audioRef.current.pause();
+      } else if (audioRef.current.paused) {
         try {
           await audioRef.current.play();
         } catch (e) {
@@ -86,7 +92,15 @@ export default function App() {
     };
 
     playMusic();
-  }, [gameState, selectedCategory]);
+  }, [gameState, selectedCategory, isMuted]);
+
+  const toggleMute = () => {
+    setIsMuted(prev => {
+      const newVal = !prev;
+      localStorage.setItem('isMuted', String(newVal));
+      return newVal;
+    });
+  };
 
   const selectMusicPreset = (catId: string, url: string) => {
     setUserCategories(prev => prev.map(c => 
@@ -208,9 +222,18 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Top controls container */}
-      <div className="fixed top-6 right-6 z-[110] flex gap-2">
-      </div>
+      {/* Top controls container - Visible only on HOME and RESULT */}
+      {(gameState === 'HOME' || gameState === 'RESULT') && (
+        <div className="fixed top-6 right-6 z-[110] flex gap-2">
+          <button
+            onClick={toggleMute}
+            className="w-12 h-12 rounded-full glass-button flex items-center justify-center transition-all hover:bg-white/20 active:scale-95"
+            title={isMuted ? '取消靜音' : '靜音'}
+          >
+            {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
+          </button>
+        </div>
+      )}
 
       <AnimatePresence mode="wait">
         {gameState === 'HOME' && (
@@ -293,6 +316,12 @@ export default function App() {
                 className="w-12 h-12 rounded-full glass-button flex items-center justify-center shrink-0"
               >
                 <ChevronLeft size={24} />
+              </button>
+              <button
+                onClick={toggleMute}
+                className="w-12 h-12 rounded-full glass-button flex items-center justify-center transition-all hover:bg-white/20 active:scale-95"
+              >
+                {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
               </button>
             </div>
 
@@ -445,6 +474,15 @@ export default function App() {
                   className="w-12 h-12 glass-button rounded-full flex items-center justify-center active:scale-95 transition-transform pointer-events-auto"
                 >
                   <HomeIcon size={20} />
+                </button>
+                <button
+                  onPointerDown={(e) => {
+                    e.stopPropagation();
+                    toggleMute();
+                  }}
+                  className="w-12 h-12 glass-button rounded-full flex items-center justify-center active:scale-95 transition-transform pointer-events-auto"
+                >
+                  {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
                 </button>
                 <div className="flex items-center gap-3 glass-card px-6 py-3 rounded-2xl border-morandi-clay/20 pointer-events-none">
                   <Clock size={18} className="text-morandi-clay" />
